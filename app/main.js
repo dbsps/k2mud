@@ -20,16 +20,21 @@ socket.on('chat message', function (msg) {
         text = msg.msg;
     
     var str = `<li><span class="nick">${nick}</span>:  ${text}</li>`;
-    $('#messages').append(str);
-    $container = $('.wrapper');
-    $container.animate({ scrollTop: $container[0].scrollHeight }, "slow");
+    smartScrollAppend(str);
 });
 socket.on('system message', function (msg) {
     var str = `<li class="system">${msg}</li>`;
-    $('#messages').append(str);
-    $container = $('.wrapper');
-    $container.animate({ scrollTop: $container[0].scrollHeight }, "slow");
+    smartScrollAppend(str);
 });
 
-$container = $('.wrapper');
-$container[0].scrollTop = $container[0].scrollHeight;
+var out = document.getElementById("out");
+
+function smartScrollAppend(str) {
+    var isScrolledToBottom = out.scrollHeight - out.clientHeight <= out.scrollTop + 1;
+    if (isScrolledToBottom) {
+        $('#messages').append(str);
+        out.scrollTop = out.scrollHeight - out.clientHeight;
+    } else {
+        $('#messages').append(str);
+    }
+}
