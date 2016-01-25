@@ -1,0 +1,19 @@
+{
+  "name": "k2mud",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dbsps/k2mud.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dbsps/k2mud/issues"
+  },
+  "homepage": "https://github.com/dbsps/k2mud#readme"
+}
