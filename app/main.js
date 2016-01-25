@@ -27,6 +27,3 @@ socket.on('system message', function (msg) {
     $('#messages').append(str);
 });
 
-socket.on('nick update', function (nickList) {
-    $('#users').html(nickList.sort().map(x => "<li>" + x + "</li>").join(''));
-})

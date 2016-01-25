@@ -48,6 +48,12 @@ io.on('connection', function(socket){
                 sendToLoggedIn('nick update', [...connectedUsers]);
             }
         }
+        if (msg.type === 'who') {
+            socket.emit('system message', 'Connected Users:');
+            for (var i = 0; i < [...connectedUsers].length; i++) {
+                send('* ' + [...connectedUsers][i])
+            }
+        }
     })
     socket.on('disconnect', function(){
         connectedUsers.delete(socket.nick);
