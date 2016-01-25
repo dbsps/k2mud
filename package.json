@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/dbsps/k2mud/issues"
   },
-  "homepage": "https://github.com/dbsps/k2mud#readme"
+  "homepage": "https://github.com/dbsps/k2mud#readme",
+  "dependencies": {
+    "express": "^4.13.4",
+    "socket.io": "^1.4.4"
+  }
 }
