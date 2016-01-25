@@ -40,22 +40,27 @@ io.on('connection', function(socket){
                 send('Error: nick already taken');
             } else {
                 if (socket.nick !== null) {
+                    io.emit('system message', "* " + socket.nick + " is now " + newNick);
                     connectedUsers.delete(socket.nick);
+                } else {
+                    send('Nick set: ' + newNick);
+                    sendToLoggedIn('system message', "* " + newNick + " has joined the realm.");
                 }
                 socket.nick = newNick;
-                connectedUsers.add(newNick);
-                send('Nick set: ' + newNick);
-                sendToLoggedIn('nick update', [...connectedUsers]);
+                connectedUsers.add(newNick);                               
             }
         }
         if (msg.type === 'who') {
             socket.emit('system message', 'Connected Users:');
             for (var i = 0; i < [...connectedUsers].length; i++) {
-                send('* ' + [...connectedUsers][i])
+                send('&emsp;* ' + [...connectedUsers][i])
             }
         }
     })
     socket.on('disconnect', function(){
+        if (socket.nick !== null) {
+            sendToLoggedIn('system message', "* " + socket.nick + " has left the realm.");
+        }
         connectedUsers.delete(socket.nick);
         console.log('user disconnected');
     });
