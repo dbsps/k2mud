@@ -4,6 +4,7 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var midgaard = require('./areas/midgaard.js');
 
 app.use(express.static(__dirname+'/app'));
 app.get('/', function(req, res){
@@ -12,64 +13,72 @@ app.get('/', function(req, res){
 
 var connectedUsers = new Set();
 
+const COMMANDS = {
+    global: require('./commands/global'),
+    room: require('./commands/room')
+};
 
-function sendToLoggedIn() {
-  var clients = io.of('/').sockets;
-  Object.keys(clients).forEach(key => {
-    let socket = clients[key];
-    if (socket.nick) {
-      socket.emit.apply(socket, arguments);
-    }
-  });
+const WORLD = {
+    send: function() {
+        var clients = io.of('/').sockets;
+        Object.keys(clients).forEach(key => {
+            let socket = clients[key];
+            if (socket.player.nick) {
+                socket.emit.apply(socket, arguments);
+            }
+        });
+    },
+    players: {
+        get: () => connectedUsers,
+        getArray: () => [...connectedUsers],
+        add: player => connectedUsers.add(player),
+        delete: player => connectedUsers.delete(player)
+    },
+    areas: { midgaard }
+};
+
+function execCommand(player, type, args) {
+    // find the command
+    var cmd = [COMMANDS.global, COMMANDS.room]
+        .find(commands => type in commands)[type];
+    
+    // run the command!
+    cmd.apply(null, [WORLD, player].concat(args));
 }
 
+function createPlayer(socket) {
+    var player = {
+        nick: null,
+        room: midgaard.v001,
+        send: msg => socket.emit('system message', msg),
+        call: (cmd, args) => execCommand(player, cmd, args), // curry this later?
+        move: room => player.room = room
+    };
+    return player;
+}
 
 io.on('connection', function(socket){
-    console.log('a user connected');
-    function send(msg) { socket.emit('system message', msg); }
+    var player = socket.player = createPlayer(socket);
     
-    socket.nick = null;
+    player.send('Please enter a username. (/nick &lt;name&gt;)');
     
-    send('Please enter a username. (/nick &lt;name&gt;)');
     socket.on('command', function(msg) {
-        if (msg.type === 'nick') {
-            var newNick = msg.args[0];
-            if (!msg.args || !newNick) {
-                send('Error: no nickname given');
-            } else if (connectedUsers.has(newNick)) {
-                send('Error: nick already taken');
-            } else {
-                if (socket.nick !== null) {
-                    io.emit('system message', "* " + socket.nick + " is now " + newNick);
-                    connectedUsers.delete(socket.nick);
-                } else {
-                    send('Nick set: ' + newNick);
-                    sendToLoggedIn('system message', "* " + newNick + " has joined the realm.");
-                }
-                socket.nick = newNick;
-                connectedUsers.add(newNick);                               
-            }
-        }
-        if (msg.type === 'who') {
-            socket.emit('system message', 'Connected Users:');
-            for (var i = 0; i < [...connectedUsers].length; i++) {
-                send('&emsp;* ' + [...connectedUsers][i])
-            }
-        }
-    })
+        execCommand(socket.player, msg.type, msg.args);
+    });
     socket.on('disconnect', function(){
-        if (socket.nick !== null) {
-            sendToLoggedIn('system message', "* " + socket.nick + " has left the realm.");
+        if (socket.player.nick !== null) {
+            WORLD.send('system message', "* " + socket.player.nick + " has left the realm.");
         }
-        connectedUsers.delete(socket.nick);
-        console.log('user disconnected');
+        WORLD.players.delete(socket.player);
     });
     socket.on('chat message', function(msg){
-        if (socket.nick === null) {
+        var player = socket.player;
+        
+        if (player.nick === null) {
             socket.emit('system message', 'Please enter a username.');
         } else {
             io.emit('chat message', {
-                nick: socket.nick,
+                nick: player.nick,
                 msg: msg
             });
         }
