@@ -1,10 +1,29 @@
 'use strict';
 
+function roomSend(WORLD, player, room, str) {
+            WORLD.players.getArray()
+                 .filter(x => x != player)
+                 .filter(x => x.room === WORLD.areas.midgaard[room])
+                 .forEach(x => x.send(str));
+    }
+    
+function moveAnnounce(WORLD, player, enter, depart) {
+    var directions = {n:'north',e:'east',s:'south',w:'west'};
+    var enterStr = player.nick + " wanders in from the " + directions[String(Object.keys(WORLD.areas.midgaard[enter].exits).filter(x => WORLD.areas.midgaard[enter].exits[x] === depart))] + '.';
+    var depStr = player.nick + " leaves to the " +  directions[String(Object.keys(WORLD.areas.midgaard[depart].exits).filter(x => WORLD.areas.midgaard[depart].exits[x] === enter))] + '.';
+    console.log(depStr);
+    console.log(enterStr);
+    roomSend(WORLD, player,  depart, depStr);
+    roomSend(WORLD, player,  enter, enterStr);    
+}
+
 function move(dir) {
     return function (WORLD, player) {
         if (player.room.exits[dir]) {
-            var vnum = player.room.exits[dir];
-            player.room = WORLD.areas.midgaard[vnum];
+            var depart = player.room.vnum;
+            var enter = player.room.exits[dir];            
+            moveAnnounce(WORLD, player, enter, depart);
+            player.room = WORLD.areas.midgaard[enter];
             player.call('look');
         } else {
             player.send('You bump into a wall');
@@ -34,5 +53,7 @@ module.exports = {
     s: move('s'),
     south: move('s'),
     w: move('w'),
-    west: move('w')
+    west: move('w'),
+
+    
 };
