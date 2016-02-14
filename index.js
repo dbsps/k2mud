@@ -34,7 +34,8 @@ const WORLD = {
         add: player => connectedUsers.add(player),
         delete: player => connectedUsers.delete(player)
     },
-    areas: { midgaard }
+    areas: { midgaard },
+    util: require('./lib/util')
 };
 
 function execCommand(player, type, args) {
@@ -57,21 +58,27 @@ function createPlayer(socket) {
     return player;
 }
 
-io.on('connection', function(socket){
+io.on('connection', function (socket) {
     var player = socket.player = createPlayer(socket);
     
     player.send('Please enter a username. (/nick &lt;name&gt;)');
     
-    socket.on('command', function(msg) {
+    socket.on('command', function (msg) {
         execCommand(socket.player, msg.type, msg.args);
     });
-    socket.on('disconnect', function(){
+    socket.on('disconnect', function () {
         if (socket.player.nick !== null) {
             WORLD.send('system message', "* " + socket.player.nick + " has left the realm.");
         }
+        
+        var playerData = socket.player;
         WORLD.players.delete(socket.player);
+        
+        WORLD.util.save(playerData).catch(err =>
+          console.error(`Failed to save player on disconnect: ${err.stack}`)
+        );
     });
-    socket.on('chat message', function(msg){
+    socket.on('chat message', function (msg) {
         var player = socket.player;
         
         if (player.nick === null) {
